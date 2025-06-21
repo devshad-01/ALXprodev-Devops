@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Data Extraction Automation - Task 1
+# Objective: Use advanced text manipulation tools (jq, awk, sed) to extract specific data from the API response
+
+DATA_FILE="data.json"
+
+# Check if data file exists
+if [ ! -f "$DATA_FILE" ]; then
+    echo "Error: $DATA_FILE not found. Please run the API automation script first."
+    exit 1
+fi
+
+# Extract data using jq
+name=$(jq -r '.name' "$DATA_FILE")
+height=$(jq -r '.height' "$DATA_FILE")
+weight=$(jq -r '.weight' "$DATA_FILE")
+type=$(jq -r '.types[0].type.name' "$DATA_FILE")
+
+# Convert height from decimeters to meters using awk
+height_m=$(echo "$height" | awk '{printf "%.1f", $1/10}')
+
+# Convert weight from hectograms to kilograms using awk
+weight_kg=$(echo "$weight" | awk '{printf "%.0f", $1/10}')
+
+# Capitalize the first letter of the name using sed
+name_capitalized=$(echo "$name" | sed 's/./\U&/')
+
+# Capitalize the first letter of the type using sed
+type_capitalized=$(echo "$type" | sed 's/./\U&/')
+
+# Format and display the output
+echo "$name_capitalized is of type $type_capitalized, weighs ${weight_kg}kg, and is ${height_m}m tall."

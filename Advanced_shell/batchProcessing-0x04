@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# Parallel Batch Processing - Task 4 (File naming as per requirement)
+# Objective: Speed up data retrieval using parallel processing
+
+# List of Pokémon to fetch
+POKEMON_LIST=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
+
+# Create directory for storing Pokémon data
+DATA_DIR="pokemon_data"
+mkdir -p "$DATA_DIR"
+
+# Base API URL
+BASE_URL="https://pokeapi.co/api/v2/pokemon"
+
+# Array to store background process IDs
+declare -a PIDS=()
+
+# Function to fetch a single Pokémon (to be run in background)
+fetch_pokemon_parallel() {
+    local pokemon_name="$1"
+    local output_file="$DATA_DIR/${pokemon_name}.json"
+    local max_retries=3
+    local retry_count=0
+    
+    echo "Fetching data for $pokemon_name in parallel..."
+    
+    while [ $retry_count -lt $max_retries ]; do
+        if curl -s -f "$BASE_URL/$pokemon_name" -o "$output_file"; then
+            # Verify the JSON is valid
+            if jq empty "$output_file" 2>/dev/null; then
+                echo "✅ Completed fetching $pokemon_name"
+                return 0
+            else
+                echo "Invalid JSON received for $pokemon_name, retrying..."
+                rm -f "$output_file"
+            fi
+        else
+            echo "Failed to fetch $pokemon_name (attempt $((retry_count + 1))/$max_retries)"
+        fi
+        
+        retry_count=$((retry_count + 1))
+        if [ $retry_count -lt $max_retries ]; then
+            sleep 1
+        fi
+    done
+    
+    echo "❌ Failed to fetch $pokemon_name after $max_retries attempts"
+    echo "Failed to fetch $pokemon_name at $(date)" >> errors.txt
+    return 1
+}
+
+echo "Starting parallel data fetching for ${#POKEMON_LIST[@]} Pokémon..."
+echo ""
+
+# Start background processes for each Pokémon
+for pokemon in "${POKEMON_LIST[@]}"; do
+    fetch_pokemon_parallel "$pokemon" &
+    PIDS+=($!)
+done
+
+echo "All fetch processes started. Waiting for completion..."
+echo ""
+
+# Wait for all background processes to complete
+failed_count=0
+for i in "${!PIDS[@]}"; do
+    pid=${PIDS[$i]}
+    pokemon=${POKEMON_LIST[$i]}
+    
+    if wait $pid; then
+        echo "✅ ${pokemon} fetch completed successfully"
+    else
+        echo "❌ ${pokemon} fetch failed"
+        failed_count=$((failed_count + 1))
+    fi
+done
+
+echo ""
+echo "Parallel processing completed!"
+echo "Successfully fetched: $((${#POKEMON_LIST[@]} - failed_count))/${#POKEMON_LIST[@]} Pokémon"
+echo "Data files saved in: $DATA_DIR/"
+
+if [ $failed_count -gt 0 ]; then
+    echo "⚠️  $failed_count fetch(es) failed. Check errors.txt for details."
+fi
