@@ -18,16 +18,16 @@ weight=$(jq -r '.weight' "$DATA_FILE")
 type=$(jq -r '.types[0].type.name' "$DATA_FILE")
 
 # Convert height from decimeters to meters using awk
-height_m=$(echo "$height" | awk '{printf "%.1f", $1/10}')
+formatted_height=$(echo "$height" | awk '{printf "%.1f", $1/10}')
 
 # Convert weight from hectograms to kilograms using awk
-weight_kg=$(echo "$weight" | awk '{printf "%.0f", $1/10}')
+formatted_weight=$(echo "$weight" | awk '{printf "%.0f", $1/10}')
 
 # Capitalize the first letter of the name using sed
-name_capitalized=$(echo "$name" | sed 's/./\U&/')
+name=$(echo "$name" | sed 's/./\U&/')
 
 # Capitalize the first letter of the type using sed
-type_capitalized=$(echo "$type" | sed 's/./\U&/')
+type=$(echo "$type" | sed 's/./\U&/')
 
 # Format and display the output
-echo "$name_capitalized is of type $type_capitalized, weighs ${weight_kg}kg, and is ${height_m}m tall."
+echo "$name is of type $type, weighs ${formatted_weight}kg, and is ${formatted_height}m tall."
