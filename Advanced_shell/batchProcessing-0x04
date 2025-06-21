@@ -62,19 +62,47 @@ done
 echo "All fetch processes started. Waiting for completion..."
 echo ""
 
+# Display current background jobs
+echo "Active background jobs:"
+jobs
+
+# Function to handle cleanup on script exit
+cleanup() {
+    echo "Cleaning up background processes..."
+    for pid in "${PIDS[@]}"; do
+        if kill -0 "$pid" 2>/dev/null; then
+            echo "Terminating process $pid"
+            kill "$pid" 2>/dev/null
+        fi
+    done
+}
+
+# Set trap to cleanup on script exit
+trap cleanup EXIT
+
 # Wait for all background processes to complete
 failed_count=0
 for i in "${!PIDS[@]}"; do
     pid=${PIDS[$i]}
     pokemon=${POKEMON_LIST[$i]}
     
-    if wait $pid; then
-        echo "✅ ${pokemon} fetch completed successfully"
+    # Check if process is still running before waiting
+    if kill -0 "$pid" 2>/dev/null; then
+        if wait $pid; then
+            echo "✅ ${pokemon} fetch completed successfully"
+        else
+            echo "❌ ${pokemon} fetch failed"
+            failed_count=$((failed_count + 1))
+        fi
     else
-        echo "❌ ${pokemon} fetch failed"
+        echo "❌ ${pokemon} process not found"
         failed_count=$((failed_count + 1))
     fi
 done
+
+# Show remaining jobs (should be empty)
+echo "Remaining background jobs:"
+jobs
 
 echo ""
 echo "Parallel processing completed!"
