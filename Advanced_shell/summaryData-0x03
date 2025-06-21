@@ -36,8 +36,8 @@ for json_file in "$DATA_DIR"/*.json; do
         height_m=$(echo "$height" | awk '{printf "%.1f", $1/10}')
         weight_kg=$(echo "$weight" | awk '{printf "%.1f", $1/10}')
         
-        # Capitalize first letter of name
-        name_capitalized=$(echo "$name" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
+        # Capitalize first letter of name using sed
+        name_capitalized=$(echo "$name" | sed 's/./\U&/')
         
         # Add to CSV file
         echo "$name_capitalized,$height_m,$weight_kg" >> "$CSV_FILE"
